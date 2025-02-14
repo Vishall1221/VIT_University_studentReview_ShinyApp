@@ -1,0 +1,12 @@
+1. Dataset Description
+This dataset contains reviews from students about various academic programs, including ratings, degree types, specializations, and sentiment analysis. The dataset has been cleaned and processed to ensure consistency and accuracy.
+Key Columns:
+•	Name: Reviewer's name
+•	Rating: Review rating (out of 5)
+•	Degree: Type of degree pursued (e.g., B.Tech, MBA, BALLB)
+•	Specialization: Specific field of study (e.g., Computer Science, Electrical Engineering)
+•	Review_Date: Date of the review (formatted as DD-MM-YYYY)
+•	Review_Text: The content of the review
+•	Word_Count: The number of words in the review
+•	Sentiment_Score: Numerical sentiment score derived from text analysis
+•	Sentiment_Label: Categorization of the sentiment as Positive, Neutral, or Negative
