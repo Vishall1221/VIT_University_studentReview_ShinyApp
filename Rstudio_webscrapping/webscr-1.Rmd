@@ -1,0 +1,238 @@
+---
+title: "project-web-scrapping-website-1"
+author: "Vishal"
+date: "`r Sys.Date()`"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+```{r }
+library(tidyverse)
+library(rvest)
+library(dplyr)
+library(httr)
+
+url <- "https://collegedunia.com/university/25914-vellore-institute-of-technology-vit-university-vellore/reviews"
+
+# Use a User-Agent to mimic a real browser
+page <- read_html(GET(url, user_agent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36")))
+```
+
+```{r }
+review_dates <- page %>% html_elements(xpath="//span[@class='jsx-3091098665' and not(ancestor::div[contains(@class, 'mb-1')])]") %>% html_text()
+review_dates <- gsub("Reviewed on ", "", review_dates)
+review_dates
+```
+
+```{r }
+Dept <- page %>% html_elements(xpath="//div[contains(@class, 'mb-1')]//a//span[@class='jsx-3091098665']") %>% html_text()
+Dept
+
+```
+```{r }
+ratings <- page %>% html_elements(xpath="//span[contains(@class, 'f-16 font-weight-semi text-dark-grey')]") %>% html_text()
+print(ratings)
+
+```
+
+```{r }
+student_names <- page %>% html_elements(xpath="//span[contains(@class, 'font-weight-semi text-primary-black')]") %>% html_text()
+
+# Print extracted student names
+print(student_names)
+```
+
+```{r }
+reviews <- page %>% 
+  html_elements(xpath="//ul[contains(@class, 'mt-2 mb-0 pl-4 fs-16 font-weight-normal text-gray-10')]/li") %>% 
+  html_text()
+
+length(reviews)
+
+```
+
+```{r }
+last_page <- 300
+
+```
+
+```{r }
+review_date_all=c()
+review_rating_all=c()
+review_dept_all=c()
+review_name_all=c()
+review_review_all=c()
+
+```
+
+```{r }
+pagesequence=seq(1,last_page)
+pagesequence
+```
+
+```{r }
+# Function to ensure equal list lengths by padding with NA
+lengthen <- function(vec, target_length) {
+  if (length(vec) < target_length) {
+    vec <- c(vec, rep(NA, target_length - length(vec)))  # Pad with NA
+  }
+  return(vec)
+}
+
+for (i in pagesequence) {
+  page_url <- ifelse(i == 1, url, paste0(url, "/page-", i, "?sort=3"))
+
+  # Handle Read Errors Gracefully
+  page <- tryCatch({
+    read_html(GET(page_url, user_agent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36")))
+  }, error = function(e) return(NULL))  # Returns NULL if error occurs
+
+  # Skip this iteration if page failed
+  if (is.null(page)) next  
+
+  # Extract Data
+  review_dates <- page %>% html_elements(xpath="//span[@class='jsx-3091098665' and not(ancestor::div[contains(@class, 'mb-1')])]") %>% html_text()
+  review_dates <- gsub("Reviewed on ", "", review_dates)
+
+  student_names <- page %>% html_elements(xpath="//span[contains(@class, 'font-weight-semi text-primary-black')]") %>% html_text()
+  ratings <- page %>% html_elements(xpath="//span[contains(@class, 'f-16 font-weight-semi text-dark-grey')]") %>% html_text()
+  reviews <- page %>% html_elements(xpath="//ul[contains(@class, 'mt-2 mb-0 pl-4 fs-16 font-weight-normal text-gray-10')]/li") %>% html_text()
+  Dept <- page %>% html_elements(xpath="//div[contains(@class, 'mb-1')]//a//span[@class='jsx-3091098665']") %>% html_text()
+
+
+  # Append Data to Lists
+  review_date_all <- append(review_date_all, review_dates)
+  review_rating_all <- append(review_rating_all,ratings)
+  review_dept_all <- append(review_dept_all,Dept)
+  review_name_all <- append(review_name_all,student_names)
+  review_review_all <- append(review_review_all,reviews)
+}
+
+```
+
+
+```{r }
+# Check lengths of extracted vectors
+cat("Total Review Dates:", length(review_date_all), "\n")
+cat("Total Ratings:", length(review_rating_all), "\n")
+cat("Total Departments:", length(review_dept_all), "\n")
+cat("Total Student Names:", length(review_name_all), "\n")
+cat("Total Reviews (Likes Section):", length(review_review_all), "\n")
+
+```
+```{r }
+# Flatten the lists into single vectors
+review_date_all <- unlist(review_date_all)
+review_rating_all <- unlist(review_rating_all)
+review_dept_all <- unlist(review_dept_all)
+review_name_all <- unlist(review_name_all)
+review_review_all <- unlist(review_review_all)
+
+length(review_date_all)
+length(review_rating_all)
+length(review_dept_all)
+length(review_name_all)
+length(review_review_all)
+
+
+```
+
+```{r }
+print(review_date_all[1:2])
+print(review_rating_all[1:2])
+print(review_dept_all[1:2])
+print(review_name_all[1:2])
+print(review_review_all[1:2])
+```
+```{r }
+combine_reviews_fixed <- function(reviews, group_size = 4) {
+  if (length(reviews) == 0) {
+    return(character(0))  # Return empty character vector if no reviews
+  }
+  
+  sapply(seq(1, length(reviews), by = group_size), function(i) {
+    paste(reviews[i:min(i+group_size-1, length(reviews))], collapse = " ")
+  })
+}
+k=round(length(review_review_all)/length(review_name_all))
+# Store the rearranged reviews
+review_review_all_rearranged <- combine_reviews_fixed(review_review_all,k)
+
+# Check new length
+length(review_review_all_rearranged)
+
+
+```
+```{r }
+print(review_review_all_rearranged[1:2])
+
+```
+```{r }
+length(review_date_all)
+length(review_rating_all)
+length(review_dept_all)
+length(review_name_all)
+length(review_review_all_rearranged)
+```
+```{r }
+# Set target length
+target_length <- max(length(review_date_all),
+length(review_rating_all),
+length(review_dept_all),
+length(review_name_all),
+length(review_review_all_rearranged))
+
+# Function to extend vectors to target length by filling with NA if needed
+extend_to_length <- function(vec, target_length) {
+  length(vec) <- target_length  # This automatically fills missing values with NA
+  return(vec)
+}
+
+# Extend all columns to 3880 rows
+review_date_all_trimmed <- extend_to_length(review_date_all, target_length)
+review_rating_all_trimmed <- extend_to_length(review_rating_all, target_length)
+review_dept_all_trimmed <- extend_to_length(review_dept_all, target_length)
+review_name_all_trimmed <- extend_to_length(review_name_all, target_length)
+review_review_all_trimmed <- extend_to_length(review_review_all_rearranged, target_length)
+
+# Check if all columns have 3880 rows
+length(review_date_all_trimmed) == target_length  # TRUE
+length(review_rating_all_trimmed) == target_length  # TRUE
+length(review_dept_all_trimmed) == target_length  # TRUE
+length(review_name_all_trimmed) == target_length  # TRUE
+length(review_review_all_trimmed) == target_length  # TRUE
+
+```
+```{r }
+reviews_df_final <- data.frame(
+  Name = review_name_all_trimmed,
+  Rating = review_rating_all_trimmed,
+  Department = review_dept_all_trimmed,
+  Review_Date = review_date_all_trimmed,
+  Review_Text = review_review_all_trimmed,
+  stringsAsFactors = FALSE
+)
+
+# Check results
+head(reviews_df_final)
+
+
+```
+```{r }
+dim(reviews_df_final)
+
+```
+```{r }
+write.csv(reviews_df_final, "D:\\Prog for DS\\Vit_reviews_data2.csv", row.names = FALSE)
+
+```
+``
+
+
